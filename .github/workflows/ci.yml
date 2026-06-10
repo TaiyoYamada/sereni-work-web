@@ -9,6 +9,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # ビルドに必要な公開系の環境変数（CI ではダミー値で良い）
+  NEXT_PUBLIC_API_URL: http://localhost:3001
+  NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+
 jobs:
   check:
     name: Lint / Typecheck / Test / Build

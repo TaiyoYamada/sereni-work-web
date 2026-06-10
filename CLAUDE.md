@@ -9,6 +9,12 @@
 - 体験実習先の割当は最適化（量子アニーリング等）による自動提案を利用するが、**最終判断は支援員が行う**。提案理由・スコア内訳・制約違反を表示し、手動修正と最終確定ができる UI にする
 - 支援員には数式の係数を直接入力させない。「希望を重視」「スキルを重視」「公平性を重視」など業務用語で重みを調整させる
 
+## プログラミング原則
+
+全コードに適用する普遍原則と TypeScript 規約。違反する場合は理由をコメントかコミットメッセージに残す。
+
+@docs/programming-principles.md
+
 ## 技術構成
 
 - Next.js（App Router）+ TypeScript
@@ -44,6 +50,7 @@
 詳細仕様は必要になったときに docs/ を読む:
 
 - `docs/requirements.md` — 画面・機能一覧（全9機能の詳細）
+- `docs/design-system.md` — デザイントークン・状態カラー対応表（iOS と共通のセマンティクス）。UI 実装前に必ず読む
 - `docs/accessibility.md` — アクセシビリティ要件と実装指針
 - ロール別権限・API エラーコードの正は api リポジトリ（sereni-work-api/docs/）にある
 
@@ -54,12 +61,15 @@ Feature-based Architecture（bulletproof-react 準拠）。
 ```
 src/
   app/         # ルーティング専用。ページは薄く保ち、features の View を呼ぶだけにする
-               # [locale]/(auth)/ と [locale]/(app)/ の route group で認証前後のレイアウトを分ける
+               # (auth)/ と (app)/ の route group で認証前後のレイアウトを分ける
+               # i18n は当面日本語のみ（ロケールルーティングなし。next-intl の request.ts 固定）
   features/    # ビジネスロジックの本体（12機能: auth, staff, participants, companies,
                #   internships, assignments, optimization, reports, evaluations,
                #   materials, notifications, dashboard）
   components/
     ui/        # shadcn/ui の CLI 管理ゾーン。業務コンポーネントを置かない・ファイル名を変えない
+               # 注意: base-nova スタイル（Base UI ベース）。asChild はなく render プロパティを使う
+               # フォームは Form ではなく Field + RHF Controller（components/shared/text-field.tsx 参照）
     layouts/   # app-shell, sidebar, header
     shared/    # 機能横断の共通部品（data-table, page-header, confirm-dialog 等）。業務知識を持たせない
   hooks/       # 汎用フック（use-debounce 等）

@@ -1,0 +1,45 @@
+{
+  "app": {
+    "name": "セレニワーク",
+    "description": "体験実習支援システム"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "participants": "利用者",
+    "companies": "実習先企業",
+    "assignments": "実習割当",
+    "optimization": "自動提案",
+    "reports": "日報",
+    "staff": "職員",
+    "logout": "ログアウト"
+  },
+  "auth": {
+    "login": "ログイン",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "loginButton": "ログインする",
+    "loginFailed": "メールアドレスまたはパスワードが正しくありません",
+    "accountInactive": "アカウントが停止されています。管理者に連絡してください"
+  },
+  "common": {
+    "loading": "読み込んでいます…",
+    "save": "保存",
+    "create": "登録",
+    "edit": "編集",
+    "cancel": "キャンセル",
+    "search": "検索",
+    "noData": "データがありません",
+    "required": "必須"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "入力内容を確認してください",
+    "UNAUTHENTICATED": "ログインし直してください",
+    "FORBIDDEN": "この操作を行う権限がありません",
+    "NOT_FOUND": "対象のデータが見つかりません",
+    "CONFLICT": "他の操作と競合しました。最新の状態を確認してください",
+    "ASSIGNMENT_CAPACITY_EXCEEDED": "この期間の受け入れ人数に達しています",
+    "OPTIMIZATION_FAILED": "割当の自動提案に失敗しました",
+    "INTERNAL_ERROR": "サーバーでエラーが発生しました。時間をおいて再度お試しください",
+    "NETWORK_ERROR": "通信に失敗しました。接続を確認してください"
+  }
+}
