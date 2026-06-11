@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { TagField } from "@/components/shared/tag-field";
 import { TextField } from "@/components/shared/text-field";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -18,6 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { paths } from "@/config/paths";
 import { useApiErrorMessage } from "@/hooks/use-api-error-message";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { Participant } from "@/types/api";
 
 import { useCreateParticipant } from "../api/create-participant";
@@ -29,6 +32,19 @@ import {
   type ParticipantFormValues,
 } from "../schemas/participant";
 
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup className="gap-5">{children}</FieldGroup>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** 作成・編集共用フォーム。participant を渡すと編集モード */
 export function ParticipantForm({ participant }: { participant?: Participant }) {
   const router = useRouter();
@@ -39,22 +55,25 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
 
   const form = useForm<ParticipantFormValues>({
     resolver: zodResolver(participantFormSchema),
+    mode: "onTouched",
     defaultValues: {
       name: participant?.name ?? "",
       kana: participant?.kana ?? "",
       email: participant?.email ?? "",
       preferredLanguage:
         (participant?.preferredLanguage as ParticipantFormValues["preferredLanguage"]) ?? "ja",
-      desiredOccupations: participant?.desiredOccupations.join("、") ?? "",
-      skills: participant?.skills.join("、") ?? "",
+      desiredOccupations: participant?.desiredOccupations ?? [],
+      skills: participant?.skills ?? [],
       strengths: participant?.strengths ?? "",
       weaknesses: participant?.weaknesses ?? "",
-      accommodations: participant?.accommodations.join("、") ?? "",
+      accommodations: participant?.accommodations ?? [],
       commuteConditions: participant?.commuteConditions ?? "",
       needsTransport: participant?.needsTransport ?? false,
       notes: participant?.notes ?? "",
     },
   });
+
+  useUnsavedChangesGuard(form.formState.isDirty && !form.formState.isSubmitSuccessful);
 
   async function onSubmit(values: ParticipantFormValues) {
     const payload = toParticipantPayload(values);
@@ -74,12 +93,11 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="max-w-2xl">
-      <FieldGroup className="gap-5">
+    <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="max-w-2xl space-y-6">
+      <FormSection title="基本情報">
         <TextField control={form.control} name="name" label="氏名（必須）" />
         <TextField control={form.control} name="kana" label="ふりがな" />
         <TextField control={form.control} name="email" label="メールアドレス" type="email" />
-
         <Controller
           control={form.control}
           name="preferredLanguage"
@@ -102,31 +120,28 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
             </Field>
           )}
         />
+      </FormSection>
 
-        <TextField
+      <FormSection title="希望・スキル">
+        <TagField
           control={form.control}
           name="desiredOccupations"
           label="希望職種"
-          description="「、」または「,」区切りで複数入力できます"
           placeholder="事務、軽作業"
         />
-        <TextField
-          control={form.control}
-          name="skills"
-          label="スキル"
-          description="「、」または「,」区切りで複数入力できます"
-        />
+        <TagField control={form.control} name="skills" label="スキル" placeholder="PC基本操作" />
         <TextField control={form.control} name="strengths" label="得意なこと" multiline />
         <TextField control={form.control} name="weaknesses" label="不得意なこと" multiline />
-        <TextField
+      </FormSection>
+
+      <FormSection title="配慮・通勤">
+        <TagField
           control={form.control}
           name="accommodations"
           label="必要な配慮"
-          description="「、」または「,」区切りで複数入力できます"
           placeholder="静かな環境、指示は書面で"
         />
         <TextField control={form.control} name="commuteConditions" label="通勤条件" />
-
         <Controller
           control={form.control}
           name="needsTransport"
@@ -137,18 +152,20 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
             </Field>
           )}
         />
+      </FormSection>
 
+      <FormSection title="その他">
         <TextField control={form.control} name="notes" label="メモ" multiline />
+      </FormSection>
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {isEdit ? "保存" : "登録"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
-            キャンセル
-          </Button>
-        </div>
-      </FieldGroup>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? "保存中…" : isEdit ? "保存" : "登録"}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          キャンセル
+        </Button>
+      </div>
     </form>
   );
 }

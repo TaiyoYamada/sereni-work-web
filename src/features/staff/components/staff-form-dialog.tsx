@@ -38,6 +38,7 @@ export function StaffFormDialog() {
 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
+    mode: "onTouched",
     defaultValues: { name: "", email: "", role: "staff" },
   });
 

@@ -1,37 +1,63 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Briefcase, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { DataTable } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FacetedFilter } from "@/components/shared/faceted-filter";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { AssignmentStatusBadge, assignmentStatusLabels } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { paths } from "@/config/paths";
-import { useMe } from "@/lib/auth";
 import { useListParams } from "@/hooks/use-list-params";
-import type { AssignmentStatus } from "@/types/api";
+import { useMe } from "@/lib/auth";
+import type { Assignment, AssignmentStatus } from "@/types/api";
 
 import { useAssignments } from "../api/get-assignments";
 
-const ALL = "ALL";
+const statusOptions = Object.entries(assignmentStatusLabels).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+const columns: ColumnDef<Assignment>[] = [
+  {
+    id: "participantName",
+    header: "利用者",
+    cell: ({ row }) => (
+      <Link
+        href={paths.assignments.detail(row.original.id)}
+        className="font-medium hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {row.original.participantName}
+      </Link>
+    ),
+  },
+  {
+    id: "companyName",
+    header: "実習先",
+    cell: ({ row }) => row.original.companyName,
+  },
+  {
+    id: "period",
+    header: "期間",
+    cell: ({ row }) => (
+      <span className="tabular-nums">
+        {row.original.startDate} 〜 {row.original.endDate}
+      </span>
+    ),
+  },
+  {
+    id: "status",
+    header: "状態",
+    cell: ({ row }) => <AssignmentStatusBadge status={row.original.status} />,
+  },
+];
 
 export function AssignmentsView() {
   const router = useRouter();
@@ -41,98 +67,49 @@ export function AssignmentsView() {
   const { data, isPending } = useAssignments({ page, status });
 
   const canEdit = me?.role === "admin" || me?.role === "staff";
+  const createButton = (
+    <Button nativeButton={false} render={<Link href={paths.assignments.new} />}>
+      <Plus aria-hidden className="size-4" />
+      割当を作成
+    </Button>
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="実習割当"
         description="実習の割当・確定・進行状況を管理します"
-        actions={
-          canEdit ? (
-            <Button nativeButton={false} render={<Link href={paths.assignments.new} />}>
-              <Plus aria-hidden className="size-4" />
-              割当を作成
-            </Button>
-          ) : undefined
-        }
+        actions={canEdit ? createButton : undefined}
       />
 
-      <div className="w-48">
-        <Select
-          value={status ?? ALL}
-          onValueChange={(value) => setFilter("status", value && value !== ALL ? value : undefined)}
-        >
-          <SelectTrigger aria-label="状態で絞り込み">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>すべての状態</SelectItem>
-            {Object.entries(assignmentStatusLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center gap-2">
+        <FacetedFilter
+          label="状態"
+          options={statusOptions}
+          value={status}
+          onChange={(value) => setFilter("status", value)}
+        />
       </div>
 
-      {isPending ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="bg-card rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>利用者</TableHead>
-                  <TableHead>実習先</TableHead>
-                  <TableHead>期間</TableHead>
-                  <TableHead>状態</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                      割当が見つかりません
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data?.data.map((assignment) => (
-                    <TableRow
-                      key={assignment.id}
-                      className="cursor-pointer"
-                      onClick={() => router.push(paths.assignments.detail(assignment.id))}
-                    >
-                      <TableCell>
-                        <Link
-                          href={paths.assignments.detail(assignment.id)}
-                          className="font-medium hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {assignment.participantName}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{assignment.companyName}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {assignment.startDate} 〜 {assignment.endDate}
-                      </TableCell>
-                      <TableCell>
-                        <AssignmentStatusBadge status={assignment.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={data?.data}
+        isPending={isPending}
+        onRowClick={(assignment) => router.push(paths.assignments.detail(assignment.id))}
+        empty={
+          <EmptyState
+            icon={Briefcase}
+            title="割当が見つかりません"
+            description={
+              status
+                ? "絞り込みを変更してお試しください"
+                : "手動で割当を作成するか、自動提案で候補を生成できます"
+            }
+            action={canEdit && !status ? createButton : undefined}
+          />
+        }
+      />
+      {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
     </div>
   );
 }

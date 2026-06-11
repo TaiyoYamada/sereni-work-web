@@ -4,8 +4,8 @@ export const companyFormSchema = z.object({
   name: z.string().min(1, "企業名を入力してください").max(200),
   industry: z.string().max(100),
   internshipDescription: z.string().max(5000),
-  requiredSkills: z.string(),
-  supportedAccommodations: z.string(),
+  requiredSkills: z.array(z.string().min(1)),
+  supportedAccommodations: z.array(z.string().min(1)),
   capacity: z
     .string()
     .min(1, "受け入れ人数を入力してください")
@@ -41,20 +41,13 @@ export type CompanyPayload = {
   emergencyContact?: string;
 };
 
-function splitList(value: string): string[] {
-  return value
-    .split(/[、,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export function toCompanyPayload(values: CompanyFormValues): CompanyPayload {
   return {
     name: values.name,
     industry: values.industry || undefined,
     internshipDescription: values.internshipDescription || undefined,
-    requiredSkills: splitList(values.requiredSkills),
-    supportedAccommodations: splitList(values.supportedAccommodations),
+    requiredSkills: values.requiredSkills,
+    supportedAccommodations: values.supportedAccommodations,
     capacity: Number(values.capacity),
     availableSchedule: values.availableSchedule || undefined,
     workHours: values.workHours || undefined,

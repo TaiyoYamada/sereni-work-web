@@ -1,16 +1,15 @@
 import { z } from "zod";
 
-/** フォームの値はすべて文字列で保持し、送信時に toParticipantPayload で API の形へ変換する */
 export const participantFormSchema = z.object({
   name: z.string().min(1, "氏名を入力してください").max(100),
   kana: z.string().max(100),
   email: z.email("メールアドレスの形式が正しくありません").or(z.literal("")),
   preferredLanguage: z.enum(["ja", "en", "zh-Hans", "vi", "ko", "pt"]),
-  desiredOccupations: z.string(),
-  skills: z.string(),
+  desiredOccupations: z.array(z.string().min(1)),
+  skills: z.array(z.string().min(1)),
   strengths: z.string().max(2000),
   weaknesses: z.string().max(2000),
-  accommodations: z.string(),
+  accommodations: z.array(z.string().min(1)),
   commuteConditions: z.string().max(2000),
   needsTransport: z.boolean(),
   notes: z.string().max(5000),
@@ -34,25 +33,17 @@ export type ParticipantPayload = {
   notes?: string;
 };
 
-/** 「、」または「,」区切りの文字列を配列へ */
-export function splitList(value: string): string[] {
-  return value
-    .split(/[、,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export function toParticipantPayload(values: ParticipantFormValues): ParticipantPayload {
   return {
     name: values.name,
     kana: values.kana || undefined,
     email: values.email || undefined,
     preferredLanguage: values.preferredLanguage,
-    desiredOccupations: splitList(values.desiredOccupations),
-    skills: splitList(values.skills),
+    desiredOccupations: values.desiredOccupations,
+    skills: values.skills,
     strengths: values.strengths || undefined,
     weaknesses: values.weaknesses || undefined,
-    accommodations: splitList(values.accommodations),
+    accommodations: values.accommodations,
     commuteConditions: values.commuteConditions || undefined,
     needsTransport: values.needsTransport,
     notes: values.notes || undefined,

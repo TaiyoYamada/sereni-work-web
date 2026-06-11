@@ -168,6 +168,46 @@ export type OptimizationCandidate = {
   energy: number | null;
 };
 
+export type MissingPreCheck = {
+  assignmentId: string;
+  participantId: string;
+  participantName: string;
+  companyName: string;
+};
+
+export type ReportTrendPoint = {
+  date: string;
+  /** その日に実習中だった割当数（= 日報の提出想定数） */
+  expected: number;
+  submitted: number;
+};
+
+export type ConditionTrendPoint = {
+  date: string;
+  condition: number | null;
+  fatigue: number | null;
+  anxiety: number | null;
+};
+
+export type Dashboard = {
+  counts: {
+    inProgressAssignments: number;
+    confirmedAssignments: number;
+    submittedReports: number;
+    needsActionReports: number;
+    interviewNeededReports: number;
+  };
+  today: {
+    date: string;
+    expectedReports: number;
+    submittedReports: number;
+    missingPreChecks: MissingPreCheck[];
+  };
+  reportTrend: ReportTrendPoint[];
+  conditionTrend: ConditionTrendPoint[];
+  assignmentStatusCounts: { status: AssignmentStatus; count: number }[];
+};
+
 export type OptimizationRun = {
   id: string;
   status: OptimizationStatus;

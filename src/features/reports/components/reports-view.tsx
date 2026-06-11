@@ -1,25 +1,21 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
+import { NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { DataTable } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FacetedFilter } from "@/components/shared/faceted-filter";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { ReportStatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { paths } from "@/config/paths";
 import { useListParams } from "@/hooks/use-list-params";
-import type { ReportStatus } from "@/types/api";
+import type { Report, ReportStatus } from "@/types/api";
 
 import { useReports } from "../api/get-reports";
 
@@ -32,105 +28,120 @@ const statusTabs: { value: string; label: string }[] = [
   { value: "REVIEWED", label: "確認済み" },
 ];
 
+const interviewOptions = [{ value: "true", label: "面談が必要" }];
+
+function scaleCell(value: number | null) {
+  return <span className="tabular-nums">{value !== null ? `${value} / 5` : "—"}</span>;
+}
+
+const columns: ColumnDef<Report>[] = [
+  {
+    id: "reportDate",
+    header: "日付",
+    cell: ({ row }) => <span className="tabular-nums">{row.original.reportDate}</span>,
+  },
+  {
+    id: "participantName",
+    header: "利用者",
+    cell: ({ row }) => (
+      <Link
+        href={paths.reports.detail(row.original.id)}
+        className="font-medium hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {row.original.participantName}
+      </Link>
+    ),
+  },
+  {
+    id: "satisfaction",
+    header: "満足度",
+    cell: ({ row }) => scaleCell(row.original.satisfaction),
+  },
+  {
+    id: "fatigue",
+    header: "疲労度",
+    cell: ({ row }) => scaleCell(row.original.fatigue),
+  },
+  {
+    id: "status",
+    header: "状態",
+    cell: ({ row }) => <ReportStatusBadge status={row.original.status} />,
+  },
+  {
+    id: "flags",
+    header: "フラグ",
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-1">
+        {row.original.wantsConsultation ? (
+          <Badge variant="outline" className="text-warning">
+            相談希望
+          </Badge>
+        ) : null}
+        {row.original.interviewNeeded ? (
+          <Badge variant="outline" className="text-warning">
+            面談
+          </Badge>
+        ) : null}
+      </div>
+    ),
+  },
+];
+
 export function ReportsView() {
   const router = useRouter();
   const { page, get, setFilter, setPage } = useListParams();
   const status = get("status") as ReportStatus | undefined;
-  const { data, isPending } = useReports({ page, status });
+  const interview = get("interview");
+  const { data, isPending } = useReports({
+    page,
+    status,
+    interviewNeeded: interview === "true" ? true : undefined,
+  });
 
   return (
     <div className="space-y-6">
       <PageHeader title="日報" description="利用者の日報を確認し、コメント・対応を記録します" />
 
-      <Tabs
-        value={status ?? ALL}
-        onValueChange={(value) => setFilter("status", value === ALL ? undefined : value)}
-      >
-        <TabsList>
-          {statusTabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-wrap items-center gap-2">
+        <Tabs
+          value={status ?? ALL}
+          onValueChange={(value) => setFilter("status", value === ALL ? undefined : value)}
+        >
+          <TabsList>
+            {statusTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <FacetedFilter
+          label="フラグ"
+          options={interviewOptions}
+          value={interview}
+          onChange={(value) => setFilter("interview", value)}
+        />
+      </div>
 
-      {isPending ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="bg-card rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>日付</TableHead>
-                  <TableHead>利用者</TableHead>
-                  <TableHead>満足度</TableHead>
-                  <TableHead>疲労度</TableHead>
-                  <TableHead>状態</TableHead>
-                  <TableHead>フラグ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-                      日報が見つかりません
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data?.data.map((report) => (
-                    <TableRow
-                      key={report.id}
-                      className="cursor-pointer"
-                      onClick={() => router.push(paths.reports.detail(report.id))}
-                    >
-                      <TableCell className="tabular-nums">{report.reportDate}</TableCell>
-                      <TableCell>
-                        <Link
-                          href={paths.reports.detail(report.id)}
-                          className="font-medium hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {report.participantName}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {report.satisfaction !== null ? `${report.satisfaction} / 5` : "—"}
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {report.fatigue !== null ? `${report.fatigue} / 5` : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <ReportStatusBadge status={report.status} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {report.wantsConsultation ? (
-                            <Badge variant="outline" className="text-warning">
-                              相談希望
-                            </Badge>
-                          ) : null}
-                          {report.interviewNeeded ? (
-                            <Badge variant="outline" className="text-warning">
-                              面談
-                            </Badge>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={data?.data}
+        isPending={isPending}
+        onRowClick={(report) => router.push(paths.reports.detail(report.id))}
+        empty={
+          <EmptyState
+            icon={NotebookPen}
+            title="日報が見つかりません"
+            description={
+              status || interview
+                ? "タブ・絞り込みを変更してお試しください"
+                : "利用者が iOS アプリから日報を提出すると、ここに表示されます"
+            }
+          />
+        }
+      />
+      {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
     </div>
   );
 }

@@ -1,51 +1,39 @@
 "use client";
 
-import { MailPlus, Search } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { MailPlus, Search, UserCog } from "lucide-react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
+import { DataTable } from "@/components/shared/data-table";
+import { EmptyState } from "@/components/shared/empty-state";
+import { FacetedFilter } from "@/components/shared/faceted-filter";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useApiErrorMessage } from "@/hooks/use-api-error-message";
 import { useListParams } from "@/hooks/use-list-params";
 import { useMe } from "@/lib/auth";
-import type { Staff } from "@/types/api";
+import type { Staff, StaffRole } from "@/types/api";
 
 import { useStaff } from "../api/get-staff";
 import { useInviteStaff } from "../api/invite-staff";
-import { roleLabel } from "../schemas/staff";
+import { roleLabel, roleOptions } from "../schemas/staff";
 import { StaffFormDialog } from "./staff-form-dialog";
 
-function AccountStatusBadge({ member }: { member: Staff }) {
-  if (member.hasAccount) return <Badge variant="secondary">発行済み</Badge>;
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      未発行
-    </Badge>
-  );
-}
+const activeOptions = [
+  { value: "true", label: "有効" },
+  { value: "false", label: "停止" },
+];
 
-export function StaffView() {
-  const { page, q, setFilter, setPage } = useListParams();
-  const { data: me } = useMe();
-  const { data, isPending } = useStaff({ page, q: q || undefined });
+/** 招待メール送信セル。行ごとに mutation を持ち、送信中はその行だけ無効化する */
+function InviteCell({ member }: { member: Staff }) {
   const errorMessage = useApiErrorMessage();
   const inviteMutation = useInviteStaff();
 
-  const isAdmin = me?.role === "admin";
-
-  async function sendInvite(member: Staff) {
+  async function sendInvite() {
     try {
       await inviteMutation.mutateAsync(member.id);
       toast.success(`${member.name}さんへ招待メールを送りました`);
@@ -53,6 +41,93 @@ export function StaffView() {
       toast.error(errorMessage(error));
     }
   }
+
+  if (!member.isActive) return null;
+
+  if (!member.hasAccount) {
+    return (
+      <Button variant="outline" size="sm" disabled={inviteMutation.isPending} onClick={sendInvite}>
+        <MailPlus aria-hidden className="size-4" />
+        招待メールを送る
+      </Button>
+    );
+  }
+
+  // 初回ログイン前の招待紛失に備える。ログイン済みの職員には API が CONFLICT を返す
+  return (
+    <Button variant="ghost" size="sm" disabled={inviteMutation.isPending} onClick={sendInvite}>
+      <MailPlus aria-hidden className="size-4" />
+      招待を再送
+    </Button>
+  );
+}
+
+const baseColumns: ColumnDef<Staff>[] = [
+  {
+    id: "name",
+    header: "氏名",
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+  },
+  {
+    id: "email",
+    header: "メールアドレス",
+    cell: ({ row }) => row.original.email,
+  },
+  {
+    id: "role",
+    header: "ロール",
+    cell: ({ row }) => roleLabel(row.original.role),
+  },
+  {
+    id: "isActive",
+    header: "状態",
+    cell: ({ row }) =>
+      row.original.isActive ? (
+        <Badge variant="secondary">有効</Badge>
+      ) : (
+        <Badge variant="outline" className="text-muted-foreground">
+          停止
+        </Badge>
+      ),
+  },
+  {
+    id: "account",
+    header: "アカウント",
+    cell: ({ row }) =>
+      row.original.hasAccount ? (
+        <Badge variant="secondary">発行済み</Badge>
+      ) : (
+        <Badge variant="outline" className="text-muted-foreground">
+          未発行
+        </Badge>
+      ),
+  },
+];
+
+const actionColumn: ColumnDef<Staff> = {
+  id: "actions",
+  header: "操作",
+  meta: { className: "w-44" },
+  cell: ({ row }) => <InviteCell member={row.original} />,
+};
+
+export function StaffView() {
+  const { page, q, get, setFilter, setPage } = useListParams();
+  const { data: me } = useMe();
+  const role = get("role") as StaffRole | undefined;
+  const isActive = get("isActive");
+  const { data, isPending } = useStaff({
+    page,
+    q: q || undefined,
+    role,
+    isActive: isActive === undefined ? undefined : isActive === "true",
+  });
+
+  const isAdmin = me?.role === "admin";
+  const columns = useMemo(
+    () => (isAdmin ? [...baseColumns, actionColumn] : baseColumns),
+    [isAdmin],
+  );
 
   return (
     <div className="space-y-6">
@@ -62,105 +137,52 @@ export function StaffView() {
         actions={isAdmin ? <StaffFormDialog /> : undefined}
       />
 
-      <div className="relative max-w-sm">
-        <Search
-          aria-hidden
-          className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-sm flex-1 basis-64">
+          <Search
+            aria-hidden
+            className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          />
+          <Input
+            type="search"
+            aria-label="職員を検索"
+            placeholder="名前・メールで検索"
+            className="pl-9"
+            defaultValue={q}
+            onChange={(e) => setFilter("q", e.target.value || undefined)}
+          />
+        </div>
+        <FacetedFilter
+          label="ロール"
+          options={roleOptions}
+          value={role}
+          onChange={(value) => setFilter("role", value)}
         />
-        <Input
-          type="search"
-          aria-label="職員を検索"
-          placeholder="名前・メールで検索"
-          className="pl-9"
-          defaultValue={q}
-          onChange={(e) => setFilter("q", e.target.value || undefined)}
+        <FacetedFilter
+          label="状態"
+          options={activeOptions}
+          value={isActive}
+          onChange={(value) => setFilter("isActive", value)}
         />
       </div>
 
-      {isPending ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="bg-card rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>氏名</TableHead>
-                  <TableHead>メールアドレス</TableHead>
-                  <TableHead>ロール</TableHead>
-                  <TableHead>状態</TableHead>
-                  <TableHead>アカウント</TableHead>
-                  {isAdmin ? <TableHead className="w-44">操作</TableHead> : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.data.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={isAdmin ? 6 : 5}
-                      className="text-muted-foreground h-24 text-center"
-                    >
-                      職員が見つかりません
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data?.data.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-medium">{member.name}</TableCell>
-                      <TableCell>{member.email}</TableCell>
-                      <TableCell>{roleLabel(member.role)}</TableCell>
-                      <TableCell>
-                        {member.isActive ? (
-                          <Badge variant="secondary">有効</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            停止
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <AccountStatusBadge member={member} />
-                      </TableCell>
-                      {isAdmin ? (
-                        <TableCell>
-                          {member.isActive && !member.hasAccount ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={inviteMutation.isPending}
-                              onClick={() => sendInvite(member)}
-                            >
-                              <MailPlus aria-hidden className="size-4" />
-                              招待メールを送る
-                            </Button>
-                          ) : null}
-                          {/* 初回ログイン前の招待紛失に備える。ログイン済みの職員には API が CONFLICT を返す */}
-                          {member.isActive && member.hasAccount ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={inviteMutation.isPending}
-                              onClick={() => sendInvite(member)}
-                            >
-                              <MailPlus aria-hidden className="size-4" />
-                              招待を再送
-                            </Button>
-                          ) : null}
-                        </TableCell>
-                      ) : null}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        data={data?.data}
+        isPending={isPending}
+        empty={
+          <EmptyState
+            icon={UserCog}
+            title="職員が見つかりません"
+            description={
+              q || role || isActive
+                ? "検索条件・絞り込みを変更してお試しください"
+                : "職員を登録し、招待メールを送るとログインできるようになります"
+            }
+          />
+        }
+      />
+      {data ? <ListPagination meta={data.meta} onPageChange={setPage} /> : null}
     </div>
   );
 }
