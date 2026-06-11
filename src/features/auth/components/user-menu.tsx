@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -28,11 +29,14 @@ const roleLabels: Record<StaffRole, string> = {
 export function UserMenu() {
   const t = useTranslations("nav");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: me } = useMe();
 
   async function logout() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // 前のユーザーのサーバー状態を次のログインへ持ち越さない
+    queryClient.clear();
     router.replace(paths.login);
     router.refresh();
   }
@@ -60,7 +64,8 @@ export function UserMenu() {
             <DropdownMenuSeparator />
           </>
         ) : null}
-        <DropdownMenuItem onSelect={logout}>
+        {/* Base UI の Menu.Item に onSelect は無い（Radix と異なる）。onClick を使う */}
+        <DropdownMenuItem onClick={logout}>
           <LogOut aria-hidden className="size-4" />
           {t("logout")}
         </DropdownMenuItem>

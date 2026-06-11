@@ -141,7 +141,7 @@ export type ReportComment = {
 
 export type ReportDetail = Report & { comments: ReportComment[] };
 
-export type OptimizationSolver = "sa" | "exact" | "dwave";
+export type OptimizationSolver = "sa" | "sqa" | "exact" | "dwave";
 
 export type OptimizationStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
 

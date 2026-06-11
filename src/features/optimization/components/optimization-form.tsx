@@ -112,7 +112,7 @@ export function OptimizationForm() {
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [weights, setWeights] = useState<OptimizationWeights>(DEFAULT_WEIGHTS);
-  const [solver, setSolver] = useState<OptimizationSolver>("sa");
+  const [solver, setSolver] = useState<OptimizationSolver>("sqa");
 
   if (isPending) return <Skeleton className="h-96 w-full max-w-3xl" />;
 
@@ -234,7 +234,8 @@ export function OptimizationForm() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="sa">シミュレーテッドアニーリング（標準）</SelectItem>
+            <SelectItem value="sqa">量子アニーリング（シミュレーション・標準）</SelectItem>
+            <SelectItem value="sa">シミュレーテッドアニーリング（古典）</SelectItem>
             {me?.role === "admin" ? (
               <SelectItem value="dwave">量子アニーリング実機（管理者のみ・要設定）</SelectItem>
             ) : null}
