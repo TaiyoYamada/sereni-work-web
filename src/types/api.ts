@@ -20,6 +20,8 @@ export type Staff = {
   email: string;
   role: StaffRole;
   isActive: boolean;
+  /** アカウント発行済み（ログイン可能）か */
+  hasAccount: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,6 +42,10 @@ export type Participant = {
   assignedStaffId: string | null;
   notes: string | null;
   isActive: boolean;
+  /** アカウント発行済み（ログイン可能）か */
+  hasAccount: boolean;
+  /** 発行済みアカウントのログイン ID（未発行は null） */
+  loginId: string | null;
   createdAt: string;
   updatedAt: string;
 };

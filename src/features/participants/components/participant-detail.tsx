@@ -12,6 +12,7 @@ import { paths } from "@/config/paths";
 import { useMe } from "@/lib/auth";
 
 import { useParticipant } from "../api/get-participant";
+import { ParticipantAccountCard } from "./participant-account-card";
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -45,6 +46,9 @@ export function ParticipantDetail({ participantId }: { participantId: string }) 
   if (!participant) return null;
 
   const canEdit = me?.role === "admin" || me?.role === "staff";
+  // アカウント操作は admin か担当 staff のみ（最終判定は API 側）
+  const canManageAccount =
+    me?.role === "admin" || (me?.role === "staff" && participant.assignedStaffId === me.id);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -96,6 +100,8 @@ export function ParticipantDetail({ participantId }: { participantId: string }) 
           </dl>
         </CardContent>
       </Card>
+
+      <ParticipantAccountCard participant={participant} canManage={canManageAccount} />
     </div>
   );
 }
