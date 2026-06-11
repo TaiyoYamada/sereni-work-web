@@ -11,6 +11,9 @@ export type ListAssignmentsParams = {
   status?: AssignmentStatus;
   from?: string;
   to?: string;
+  /** 並び替えキー（startDate | createdAt。検証は API 側） */
+  sort?: string;
+  order?: string;
 };
 
 export function getAssignments(params: ListAssignmentsParams = {}): Promise<Paginated<Assignment>> {

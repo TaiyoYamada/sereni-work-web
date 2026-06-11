@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FacetedFilter } from "@/components/shared/faceted-filter";
+import { SortHeader } from "@/components/shared/sort-header";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ const activeOptions = [
 const columns: ColumnDef<Company>[] = [
   {
     id: "name",
-    header: "企業名",
+    header: () => <SortHeader field="name">企業名</SortHeader>,
     cell: ({ row }) => (
       <Link
         href={paths.companies.detail(row.original.id)}
@@ -46,7 +47,11 @@ const columns: ColumnDef<Company>[] = [
   },
   {
     id: "capacity",
-    header: "受け入れ人数",
+    header: () => (
+      <span className="flex justify-end">
+        <SortHeader field="capacity">受け入れ人数</SortHeader>
+      </span>
+    ),
     meta: { className: "text-right" },
     cell: ({ row }) => <span className="tabular-nums">{row.original.capacity} 名</span>,
   },
@@ -86,6 +91,8 @@ export function CompaniesView() {
     page,
     q: q || undefined,
     isActive: isActive === undefined ? undefined : isActive === "true",
+    sort: get("sort"),
+    order: get("order"),
   });
 
   const isAdmin = me?.role === "admin";

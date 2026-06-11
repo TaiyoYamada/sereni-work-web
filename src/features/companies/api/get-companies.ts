@@ -8,6 +8,9 @@ export type ListCompaniesParams = {
   perPage?: number;
   q?: string;
   isActive?: boolean;
+  /** 並び替えキー（name | capacity | createdAt。検証は API 側） */
+  sort?: string;
+  order?: string;
 };
 
 export function getCompanies(params: ListCompaniesParams = {}): Promise<Paginated<Company>> {

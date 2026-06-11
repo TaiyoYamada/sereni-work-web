@@ -168,6 +168,13 @@ export type OptimizationCandidate = {
   energy: number | null;
 };
 
+/** タグ入力のサジェスト候補（登録済みデータから頻度順） */
+export type TagSuggestions = {
+  occupations: string[];
+  skills: string[];
+  accommodations: string[];
+};
+
 export type MissingPreCheck = {
   assignmentId: string;
   participantId: string;

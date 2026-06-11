@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FacetedFilter } from "@/components/shared/faceted-filter";
+import { SortHeader } from "@/components/shared/sort-header";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { AssignmentStatusBadge, assignmentStatusLabels } from "@/components/shared/status-badge";
@@ -45,7 +46,7 @@ const columns: ColumnDef<Assignment>[] = [
   },
   {
     id: "period",
-    header: "期間",
+    header: () => <SortHeader field="startDate">期間</SortHeader>,
     cell: ({ row }) => (
       <span className="tabular-nums">
         {row.original.startDate} 〜 {row.original.endDate}
@@ -64,7 +65,12 @@ export function AssignmentsView() {
   const { page, get, setFilter, setPage } = useListParams();
   const { data: me } = useMe();
   const status = get("status") as AssignmentStatus | undefined;
-  const { data, isPending } = useAssignments({ page, status });
+  const { data, isPending } = useAssignments({
+    page,
+    status,
+    sort: get("sort"),
+    order: get("order"),
+  });
 
   const canEdit = me?.role === "admin" || me?.role === "staff";
   const createButton = (

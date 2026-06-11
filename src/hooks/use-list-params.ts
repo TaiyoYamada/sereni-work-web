@@ -31,6 +31,9 @@ export function useListParams() {
     /** 検索条件の変更（ページは 1 に戻す） */
     setFilter: (key: string, value: string | undefined) =>
       setParams({ [key]: value, page: undefined }),
+    /** 複数の検索条件をまとめて変更（ページは 1 に戻す）。ソートの sort + order 同時更新などに使う */
+    setFilters: (updates: Record<string, string | undefined>) =>
+      setParams({ ...updates, page: undefined }),
     setPage: (page: number) => setParams({ page: page <= 1 ? undefined : page }),
   };
 }

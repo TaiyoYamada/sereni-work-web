@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FacetedFilter } from "@/components/shared/faceted-filter";
+import { SortHeader } from "@/components/shared/sort-header";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +66,7 @@ function InviteCell({ member }: { member: Staff }) {
 const baseColumns: ColumnDef<Staff>[] = [
   {
     id: "name",
-    header: "氏名",
+    header: () => <SortHeader field="name">氏名</SortHeader>,
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
@@ -121,6 +122,8 @@ export function StaffView() {
     q: q || undefined,
     role,
     isActive: isActive === undefined ? undefined : isActive === "true",
+    sort: get("sort"),
+    order: get("order"),
   });
 
   const isAdmin = me?.role === "admin";

@@ -16,6 +16,7 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { Company } from "@/types/api";
 
 import { useCreateCompany } from "../api/create-company";
+import { useTagSuggestions } from "../api/get-tag-suggestions";
 import { useUpdateCompany } from "../api/update-company";
 import { companyFormSchema, toCompanyPayload, type CompanyFormValues } from "../schemas/company";
 
@@ -38,6 +39,7 @@ export function CompanyForm({ company }: { company?: Company }) {
   const errorMessage = useApiErrorMessage();
   const createMutation = useCreateCompany();
   const updateMutation = useUpdateCompany(company?.id ?? "");
+  const { data: suggestions } = useTagSuggestions();
   const isEdit = company !== undefined;
 
   const form = useForm<CompanyFormValues>({
@@ -89,12 +91,18 @@ export function CompanyForm({ company }: { company?: Company }) {
       </FormSection>
 
       <FormSection title="受け入れ条件">
-        <TagField control={form.control} name="requiredSkills" label="必要スキル" />
+        <TagField
+          control={form.control}
+          name="requiredSkills"
+          label="必要スキル"
+          suggestions={suggestions?.skills}
+        />
         <TagField
           control={form.control}
           name="supportedAccommodations"
           label="対応可能な配慮事項"
           placeholder="静かな環境、休憩を多めに"
+          suggestions={suggestions?.accommodations}
         />
         <TextField
           control={form.control}

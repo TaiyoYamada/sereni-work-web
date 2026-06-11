@@ -12,6 +12,9 @@ export type ListReportsParams = {
   from?: string;
   to?: string;
   interviewNeeded?: boolean;
+  /** 並び替えキー（reportDate | createdAt。検証は API 側） */
+  sort?: string;
+  order?: string;
 };
 
 export function getReports(params: ListReportsParams = {}): Promise<Paginated<Report>> {

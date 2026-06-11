@@ -9,6 +9,9 @@ export type ListParticipantsParams = {
   q?: string;
   assignedStaffId?: string;
   isActive?: boolean;
+  /** 並び替えキー（name | createdAt。検証は API 側） */
+  sort?: string;
+  order?: string;
 };
 
 export function getParticipants(

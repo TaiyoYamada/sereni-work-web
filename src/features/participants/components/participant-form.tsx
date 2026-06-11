@@ -24,6 +24,7 @@ import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import type { Participant } from "@/types/api";
 
 import { useCreateParticipant } from "../api/create-participant";
+import { useTagSuggestions } from "../api/get-tag-suggestions";
 import { useUpdateParticipant } from "../api/update-participant";
 import {
   languageOptions,
@@ -51,6 +52,7 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
   const errorMessage = useApiErrorMessage();
   const createMutation = useCreateParticipant();
   const updateMutation = useUpdateParticipant(participant?.id ?? "");
+  const { data: suggestions } = useTagSuggestions();
   const isEdit = participant !== undefined;
 
   const form = useForm<ParticipantFormValues>({
@@ -128,8 +130,15 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
           name="desiredOccupations"
           label="希望職種"
           placeholder="事務、軽作業"
+          suggestions={suggestions?.occupations}
         />
-        <TagField control={form.control} name="skills" label="スキル" placeholder="PC基本操作" />
+        <TagField
+          control={form.control}
+          name="skills"
+          label="スキル"
+          placeholder="PC基本操作"
+          suggestions={suggestions?.skills}
+        />
         <TextField control={form.control} name="strengths" label="得意なこと" multiline />
         <TextField control={form.control} name="weaknesses" label="不得意なこと" multiline />
       </FormSection>
@@ -140,6 +149,7 @@ export function ParticipantForm({ participant }: { participant?: Participant }) 
           name="accommodations"
           label="必要な配慮"
           placeholder="静かな環境、指示は書面で"
+          suggestions={suggestions?.accommodations}
         />
         <TextField control={form.control} name="commuteConditions" label="通勤条件" />
         <Controller

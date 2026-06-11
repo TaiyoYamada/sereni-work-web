@@ -9,6 +9,9 @@ export type ListStaffParams = {
   q?: string;
   role?: StaffRole;
   isActive?: boolean;
+  /** 並び替えキー（name | createdAt。検証は API 側） */
+  sort?: string;
+  order?: string;
 };
 
 export function getStaff(params: ListStaffParams = {}): Promise<Paginated<Staff>> {

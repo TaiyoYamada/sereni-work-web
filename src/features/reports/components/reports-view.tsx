@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FacetedFilter } from "@/components/shared/faceted-filter";
+import { SortHeader } from "@/components/shared/sort-header";
 import { ListPagination } from "@/components/shared/list-pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { ReportStatusBadge } from "@/components/shared/status-badge";
@@ -37,7 +38,7 @@ function scaleCell(value: number | null) {
 const columns: ColumnDef<Report>[] = [
   {
     id: "reportDate",
-    header: "日付",
+    header: () => <SortHeader field="reportDate">日付</SortHeader>,
     cell: ({ row }) => <span className="tabular-nums">{row.original.reportDate}</span>,
   },
   {
@@ -97,6 +98,8 @@ export function ReportsView() {
     page,
     status,
     interviewNeeded: interview === "true" ? true : undefined,
+    sort: get("sort"),
+    order: get("order"),
   });
 
   return (
